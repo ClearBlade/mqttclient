@@ -47,6 +47,7 @@ func SendConnect(c *Client) error {
 		ClientId:       clientid,
 		WillRetainFlag: false,
 		WillFlag:       false,
+		Version:        0x4,
 	}
 	return c.sendMessage(connect)
 }
