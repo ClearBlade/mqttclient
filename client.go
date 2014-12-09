@@ -25,8 +25,7 @@ type Client struct {
 	internalOutgoingBuf chan []byte
 	Timeout             time.Duration
 	//thou shalt type channels consumed by others
-	ClientMessageBuffer chan<- *mqtt.Publish
-	ClientErrorBuffer   chan error
+	ClientErrorBuffer chan error
 
 	internalErrorBuffer chan *errWrap
 	shutdown_reader     chan struct{}
@@ -37,7 +36,7 @@ type Client struct {
 	shutting_down bool
 
 	msg_store                *storage
-	subscriptions            *subscription_store
+	subscriptions            *outgoing_topics
 	waiting_for_subscription *subscription_store
 	//TODO:redesign around a thread-local
 	//rng
@@ -77,7 +76,7 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 	client := &Client{
 		msg_store:                newStorage(),
 		waiting_for_subscription: newSubscriptionStore(),
-		subscriptions:            newSubscriptionStore(),
+		subscriptions:            newOutgoingTopics(),
 		SystemSecret:             ss,
 		SystemKey:                sk,
 		AuthToken:                tok,
@@ -85,7 +84,6 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 		Timeout:                  time.Duration(timeout) * time.Second,
 		internalOutgoingBuf:      make(chan []byte, 30),
 		ClientErrorBuffer:        make(chan error, 10),
-		ClientMessageBuffer:      make(chan<- *mqtt.Publish, 30),
 		internalErrorBuffer:      make(chan *errWrap, 2),
 		shutdown_reader:          make(chan struct{}, 1),
 		shutdown_writer:          make(chan struct{}, 1),
@@ -198,7 +196,7 @@ func (c *Client) dispatch(msg mqtt.Message) {
 		//shouldn't happen?
 	case mqtt.CONNACK:
 	case mqtt.PUBLISH:
-		c.subscriptions.relay_message(msg, msg.(*mqtt.Publish).Topic.Whole)
+		c.subscriptions.relay_message(msg.(*mqtt.Publish), msg.(*mqtt.Publish).Topic.Whole)
 		switch msg.(*mqtt.Publish).Header.QOS {
 		case 1:
 			c.sendMessage(&mqtt.Puback{

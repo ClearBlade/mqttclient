@@ -74,9 +74,7 @@ func Test_ShutdownTimes(t *testing.T) {
 	if len(c.internalOutgoingBuf) != 0 {
 		t.Error("didn't clear from internalOutogingBuf")
 	}
-	if len(c.ClientMessageBuffer) != 0 {
-		t.Error("how did this even happen?")
-	}
+
 	if len(c.internalErrorBuffer) != 0 {
 		for len(c.internalErrorBuffer) > 0 {
 			e := <-c.internalErrorBuffer

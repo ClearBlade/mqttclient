@@ -191,7 +191,7 @@ func SubscribeFlow(c *Client, topic string, qos int) (<-chan *mqtt.Publish, erro
 		//WARNING: HERE WE ARE ASSUMING ONE SUBACK PER SUBSCRIPTION
 		case _ = <-schan:
 			c.waiting_for_subscription.remove_subscription(topic)
-			return c.subscriptions.new_subscription(topic)
+			return c.subscriptions.new_outgoing(topic)
 		case <-time.After(c.Timeout / 2):
 			//THE ABOVE IS TOTALLY ARBITRARY
 			if retries == 0 {
