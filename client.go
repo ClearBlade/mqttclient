@@ -25,7 +25,7 @@ type Client struct {
 	internalOutgoingBuf chan []byte
 	Timeout             time.Duration
 	//thou shalt type channels consumed by others
-	ClientMessageBuffer chan<- mqtt.Message
+	ClientMessageBuffer chan<- *mqtt.Publish
 	ClientErrorBuffer   chan error
 
 	internalErrorBuffer chan *errWrap
@@ -85,7 +85,7 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 		Timeout:                  time.Duration(timeout) * time.Second,
 		internalOutgoingBuf:      make(chan []byte, 30),
 		ClientErrorBuffer:        make(chan error, 10),
-		ClientMessageBuffer:      make(chan<- mqtt.Message, 30),
+		ClientMessageBuffer:      make(chan<- *mqtt.Publish, 30),
 		internalErrorBuffer:      make(chan *errWrap, 2),
 		shutdown_reader:          make(chan struct{}, 1),
 		shutdown_writer:          make(chan struct{}, 1),
