@@ -144,7 +144,7 @@ func UnsubscribeFlow(c *Client, topic string) error {
 //SubscribeFlow allows the client to subscribe to an mqtt topic. it returns a channel that will contain
 //the publishes recieved from that particular topic, or an error
 //this call blocks until a suback is recieved
-func SubscribeFlow(c *Client, topic string, qos int) (<-chan mqtt.Message, error) {
+func SubscribeFlow(c *Client, topic string, qos int) (<-chan *mqtt.Publish, error) {
 	//NOTE: we're only allowing singleton subscriptions right now
 	if qos > 2 || qos < 0 {
 		return nil, errors.New("Invalid qos: " + strconv.Itoa(qos) + ". Must be less than two.")
