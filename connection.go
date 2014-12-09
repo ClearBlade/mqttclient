@@ -19,7 +19,8 @@ const (
 )
 
 //SendConnect does precisely what it says on the tin. It returns an error if there is a problem with the authentication
-func SendConnect(c *Client) error {
+func SendConnect(c *Client, lastWill, lastWillRetain bool,
+	lastWillBody, lastWillTopic string) error {
 	var username string
 	var password string
 	var clientid string
@@ -36,6 +37,15 @@ func SendConnect(c *Client) error {
 	} else {
 		clientid = c.Clientid
 	}
+	var lwTopic mqtt.TopicPath
+	if lastWill {
+		var valid bool
+		lwTopic, valid = mqtt.NewTopicPath(lastWillTopic)
+		if !valid {
+			return fmt.Errorf("%S is an invalid topic\n", lastWillTopic)
+		}
+	}
+
 	connect := &mqtt.Connect{
 		ProtoName:      "MQTT",
 		UsernameFlag:   true,
@@ -45,9 +55,12 @@ func SendConnect(c *Client) error {
 		CleanSeshFlag:  true,
 		KeepAlive:      60,
 		ClientId:       clientid,
-		WillRetainFlag: false,
-		WillFlag:       false,
-		Version:        0x4,
+		WillRetainFlag: lastWillRetain,
+		WillFlag:       lastWill,
+		WillTopic:      lwTopic,
+		WillMessage:    lastWillBody,
+
+		Version: 0x4,
 	}
 	return c.sendMessage(connect)
 }
