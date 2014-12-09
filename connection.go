@@ -19,7 +19,7 @@ const (
 )
 
 //SendConnect does precisely what it says on the tin. It returns an error if there is a problem with the authentication
-func SendConnect(c *Client, lastWill, lastWillRetain bool,
+func SendConnect(c *Client, lastWill, lastWillRetain bool, lastWillQOS int,
 	lastWillBody, lastWillTopic string) error {
 	var username string
 	var password string
@@ -59,8 +59,8 @@ func SendConnect(c *Client, lastWill, lastWillRetain bool,
 		WillFlag:       lastWill,
 		WillTopic:      lwTopic,
 		WillMessage:    lastWillBody,
-
-		Version: 0x4,
+		WillQOS:        uint8(lastWillQOS),
+		Version:        0x4,
 	}
 	return c.sendMessage(connect)
 }
