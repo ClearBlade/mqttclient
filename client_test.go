@@ -106,7 +106,8 @@ func Test_timeout(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	SendConnect(c)
+
+	SendConnect(c, false, false, 0, "", "")
 	//the server won't respond, so, it should automatically disconnect after
 	//2 seconds.
 	//one to send the pingreq

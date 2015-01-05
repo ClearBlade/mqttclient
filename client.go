@@ -148,6 +148,7 @@ func (c *Client) connectionListener() {
 		for {
 			msg, err := mqtt.DecodePacket(c.C)
 			if err != nil {
+				shutdown = true
 				e <- err
 				return
 			}
@@ -299,6 +300,9 @@ func (c *Client) errorTree() {
 	}
 	if c.C != nil {
 		c.C.Close()
+	}
+	if e.reciever != _REGULAR_SHUTDOWN {
+		c.ClientErrorBuffer <- fmt.Errorf("Shutting down: Recieved error %\n", e.err.Error())
 	}
 }
 
