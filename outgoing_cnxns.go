@@ -2,6 +2,7 @@ package mqttclient
 
 import (
 	"errors"
+	"fmt"
 	mqtt "github.com/clearblade/mqtt_parsing"
 	"sync"
 )
@@ -25,10 +26,12 @@ func newOutgoingTopics() *outgoing_topics {
 }
 
 func (ot *outgoing_topics) relay_message(msg *mqtt.Publish, topic string) error {
+	fmt.Printf("OUTGOING RELAY: %+v\n", ot.store)
 	topic = strip(topic)
 	//drop the lock down if ordering is important
 	ot.mux.RLock()
-	ch, extant := ot.store[topic]
+	//ch, extant := ot.store[topic]
+	ch, extant := ot.store[ot.bestTopicMatch(topic)]
 	ot.mux.RUnlock()
 	if !extant {
 		//this will probably be an error that is the client's fault

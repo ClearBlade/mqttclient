@@ -98,6 +98,7 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 //sort of like a fan-in, except this simply allows us to do
 // all of the error handling logic in one place
 func (c *Client) sendMessage(m mqtt.Message) error {
+	fmt.Printf("Send Message: %+v\n", m)
 	select {
 	case c.internalOutgoingBuf <- m.Encode():
 		return nil
@@ -194,11 +195,14 @@ func (c *Client) dispatch(msg mqtt.Message) {
 	//for example we make a decision if the client sees this request or not
 	//or if we have to send another message in a flow
 	c.last_timeout_reccd = time.Now()
+	fmt.Printf("DISPATCH: %+v\n", msg)
 	switch msg.Type() {
 	case mqtt.CONNECT:
 		//shouldn't happen?
 	case mqtt.CONNACK:
 	case mqtt.PUBLISH:
+		pubMsg := msg.(*mqtt.Publish)
+		fmt.Printf("IT WAS A PUBLISH: %+v\n", string(pubMsg.Payload))
 		c.subscriptions.relay_message(msg.(*mqtt.Publish), msg.(*mqtt.Publish).Topic.Whole)
 		switch msg.(*mqtt.Publish).Header.QOS {
 		case 1:
@@ -302,7 +306,7 @@ func (c *Client) errorTree() {
 		c.C.Close()
 	}
 	if e.reciever != _REGULAR_SHUTDOWN {
-		c.ClientErrorBuffer <- fmt.Errorf("Shutting down: Recieved error %\n", e.err.Error())
+		c.ClientErrorBuffer <- fmt.Errorf("Shutting down: Recieved error %v\n", e.err.Error())
 	}
 }
 
