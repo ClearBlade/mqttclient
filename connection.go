@@ -194,12 +194,6 @@ func SubscribeFlow(c *Client, topic string, qos int) (<-chan *mqtt.Publish, erro
 	//better than blocking for eternity
 	retries := 3
 	for {
-		if retries > 0 {
-			err = c.sendMessage(sub)
-			if err != nil {
-				log.Println("error resending subscribe", err.Error())
-			}
-		}
 		select {
 		//WARNING: HERE WE ARE ASSUMING ONE SUBACK PER SUBSCRIPTION
 		case _ = <-schan:
@@ -211,6 +205,12 @@ func SubscribeFlow(c *Client, topic string, qos int) (<-chan *mqtt.Publish, erro
 				return nil, errors.New("Did not recieve suback after 3 tries")
 			}
 			retries--
+		}
+		if retries > 0 {
+			err = c.sendMessage(sub)
+			if err != nil {
+				log.Println("error resending subscribe", err.Error())
+			}
 		}
 	}
 }
