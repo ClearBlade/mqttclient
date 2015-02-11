@@ -67,8 +67,11 @@ func SendConnect(c *Client, lastWill, lastWillRetain bool, lastWillQOS int,
 
 //MakeMeABytePublish is a helper function to create a QOS 0, non retained MQTT publish without the problems of worrying about bad unicode
 //if you're not into strings
-func MakeMeABytePublish(topic string, msg []byte, mid uint16) *mqtt.Publish {
-	tp, _ := mqtt.NewTopicPath(topic)
+func MakeMeABytePublish(topic string, msg []byte, mid uint16) (*mqtt.Publish, error) {
+	tp, valid := mqtt.NewTopicPath(topic)
+	if !valid {
+		return nil, fmt.Errorf("invalid topic path %s\n", topic)
+	}
 	return &mqtt.Publish{
 		Header: &mqtt.StaticHeader{
 			QOS:    0,
@@ -78,12 +81,15 @@ func MakeMeABytePublish(topic string, msg []byte, mid uint16) *mqtt.Publish {
 		Payload:   msg,
 		MessageId: mid,
 		Topic:     tp,
-	}
+	}, nil
 }
 
 //MakeMeAPublish is a helper function for creating a publish with a string payload
-func MakeMeAPublish(topic, msg string, mid uint16) *mqtt.Publish {
-	tp, _ := mqtt.NewTopicPath(topic)
+func MakeMeAPublish(topic, msg string, mid uint16) (*mqtt.Publish, error) {
+	tp, valid := mqtt.NewTopicPath(topic)
+	if !valid {
+		return nil, fmt.Errorf("invalid topic path %s\n", topic)
+	}
 	return &mqtt.Publish{
 		Header: &mqtt.StaticHeader{
 			QOS:    0,
@@ -93,7 +99,7 @@ func MakeMeAPublish(topic, msg string, mid uint16) *mqtt.Publish {
 		Payload:   []byte(msg),
 		MessageId: mid,
 		Topic:     tp,
-	}
+	}, nil
 }
 
 //PublishFlow allows one use their mqttclient to publish a message
