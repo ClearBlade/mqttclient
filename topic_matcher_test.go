@@ -15,8 +15,11 @@ func Test_TopicMatcherRegular(t *testing.T) {
 	ot := newOutgoingTopics()
 	m := populateTopics(t, ot, topics)
 	for topic, cha := range m {
-		msg := MakeMeAPublish(topic, "hello on "+topic, 0)
-		err := ot.relay_message(msg, topic)
+		msg, err := MakeMeAPublish(topic, "hello on "+topic, 0)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		err = ot.relay_message(msg, topic)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -29,8 +32,11 @@ func Test_TopicMatcherRegular(t *testing.T) {
 	//now for some fake topics
 	faketop := []string{"foobar", "spam", "eggies"}
 	for _, topic := range faketop {
-		msg := MakeMeAPublish(topic, "hello on "+topic, 0)
-		err := ot.relay_message(msg, topic)
+		msg, err := MakeMeAPublish(topic, "hello on "+topic, 0)
+		if err != nil {
+			t.Error("invalid topic " + err.Error())
+		}
+		err = ot.relay_message(msg, topic)
 		if err == nil {
 			t.Error("should have errored out as no subscription exists")
 		}
@@ -43,7 +49,10 @@ func Test_TopicMatchPlus(t *testing.T) {
 	m := populateTopics(t, ot, topics)
 	//the reason we don't break this fn out of scope is to capture the reference to m
 	test_msg := func(topic, recieving string, ot *outgoing_topics) {
-		msg := MakeMeAPublish(topic, "hello from "+topic, 0)
+		msg, err := MakeMeAPublish(topic, "hello from "+topic, 0)
+		if err != nil {
+			t.Error(err.Error())
+		}
 		ot.relay_message(msg, topic)
 		select {
 		case _ = <-m[recieving]:
@@ -59,7 +68,10 @@ func Test_TopicMatchPlus(t *testing.T) {
 	test_msg("foo/bar/baz/spam", topics[4], ot)
 	//now we'll check for double matches
 	tt5 := "foo/spam"
-	msg5 := MakeMeAPublish(tt5, "hello from "+tt5, 0)
+	msg5, err := MakeMeAPublish(tt5, "hello from "+tt5, 0)
+	if err != nil {
+		t.Error(err.Error())
+	}
 	ot.relay_message(msg5, tt5)
 	got1 := 0
 	select {
@@ -84,7 +96,10 @@ func Test_TopicMatchPlus(t *testing.T) {
 
 	invalid_topics := []string{"bar/baz/quux/eggs", "spam", "quickly/get some/spam"}
 	test_invalid := func(topic string, ot *outgoing_topics) {
-		msg := MakeMeAPublish(topic, "hello from "+topic, 0)
+		msg, err := MakeMeAPublish(topic, "hello from "+topic, 0)
+		if err != nil {
+			t.Error(err.Error())
+		}
 		ot.relay_message(msg, topic)
 		for top, ch := range m {
 			select {
@@ -108,7 +123,10 @@ func Test_TopicMatchCrunch(t *testing.T) {
 	ot := newOutgoingTopics()
 	m := populateTopics(t, ot, topics)
 	test_msg := func(topic, recieving string, ot *outgoing_topics) {
-		msg := MakeMeAPublish(topic, "hello from "+topic, 0)
+		msg, err := MakeMeAPublish(topic, "hello from "+topic, 0)
+		if err != nil {
+			t.Error(err.Error())
+		}
 		ot.relay_message(msg, topic)
 		select {
 		case _ = <-m[recieving]:
@@ -130,7 +148,10 @@ func Test_WildcardRumble(t *testing.T) {
 	ot := newOutgoingTopics()
 	m := populateTopics(t, ot, topics)
 	test_msg := func(topic, recieving string, ot *outgoing_topics) {
-		msg := MakeMeAPublish(topic, "hello from "+topic, 0)
+		msg, err := MakeMeAPublish(topic, "hello from "+topic, 0)
+		if err != nil {
+			t.Error(err.Error())
+		}
 		ot.relay_message(msg, topic)
 		select {
 		case _ = <-m[recieving]:
