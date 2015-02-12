@@ -125,7 +125,10 @@ func UnsubscribeFlow(c *Client, topic string) error {
 		return errors.New("Not subscribed or waiting to be subscribed to topic: " + topic)
 	}
 
-	tp, _ := mqtt.NewTopicPath(topic)
+	tp, valid := mqtt.NewTopicPath(topic)
+	if !valid {
+		return errors.New("invalid wildcard topic")
+	}
 	//ugh gotta do work now
 	unsub := &mqtt.Unsubscribe{
 		MessageId: randMid(c),
@@ -169,7 +172,10 @@ func SubscribeFlow(c *Client, topic string, qos int) (<-chan *mqtt.Publish, erro
 		return nil, errors.New("Invalid qos: " + strconv.Itoa(qos) + ". Must be less than two.")
 	}
 
-	tp, _ := mqtt.NewTopicPath(topic)
+	tp, valid := mqtt.NewTopicPath(topic)
+	if !valid {
+		return nil, errors.New("invalid topic path")
+	}
 	sub := &mqtt.Subscribe{
 		Header: &mqtt.StaticHeader{
 			DUP:    false,
