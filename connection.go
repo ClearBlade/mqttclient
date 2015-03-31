@@ -24,13 +24,12 @@ func SendConnect(c *Client, lastWill, lastWillRetain bool, lastWillQOS int,
 	var username string
 	var password string
 	var clientid string
+
 	if c.AuthToken != "" && c.SystemKey != "" {
 		username, password = c.AuthToken, c.SystemKey
-	} else if c.AuthToken == "" && c.SystemKey != "" && c.SystemKey != "" {
-		username, password = c.SystemKey, c.SystemSecret
 	} else {
-		errFmtStr := "You need either an auth token and systemkey, or a systemkey and systemsecret to connect. The client got\n\tToken: %s\n\tsystemkey: %s\n\tsystemsecret: %s\n"
-		return errors.New(fmt.Sprintf(errFmtStr, c.AuthToken, c.SystemKey, c.SystemSecret))
+
+		return errors.New(fmt.Sprintf("Systemkey and auth token required, one of those was blank syskey: %s, token: %s\n", c.SystemKey, c.AuthToken))
 	}
 	if c.Clientid == "" {
 		clientid = randStr(c)
