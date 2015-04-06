@@ -2,7 +2,6 @@ package mqttclient
 
 import (
 	"errors"
-	"fmt"
 	mqtt "github.com/clearblade/mqtt_parsing"
 	"strings"
 	"sync"
@@ -27,7 +26,6 @@ func newSubscriptionStore() *subscription_store {
 
 //relay_message takes a topic and shovels it along to the consumer-owned channel
 func (ss *subscription_store) relay_message(msg mqtt.Message, topic string) error {
-	fmt.Printf("SUBSTORE RELAY\n")
 	topic = strip(topic)
 	//drop the lock down if ordering is important
 	ss.mux.RLock()
