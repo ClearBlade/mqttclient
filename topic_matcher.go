@@ -1,7 +1,7 @@
 package mqttclient
 
 import (
-	"fmt"
+	//	"fmt"
 	"strings"
 )
 
@@ -14,7 +14,7 @@ func (ot *outgoing_topics) bestTopicMatch(topic string) string {
 	for subscription := range ot.store {
 		sub := strings.Split(subscription, "/")
 		if !isValidSubscriptionTopic(sub) {
-			fmt.Printf("Bad subscription topic: %s\n", subscription)
+			//fmt.Printf("Bad subscription topic: %s\n", subscription)
 			continue
 		}
 		matched := matchActualToSubscription(actual, sub)
@@ -23,13 +23,13 @@ func (ot *outgoing_topics) bestTopicMatch(topic string) string {
 				bestMatch = subscription
 				bestScore = curScore
 			}
-			fmt.Printf("Matched: %s %d\n", subscription, scoreSubscription(sub, 0))
+			//fmt.Printf("Matched: %s %d\n", subscription, scoreSubscription(sub, 0))
 		} else {
-			fmt.Printf("Did not match: %s\n", subscription)
+			//fmt.Printf("Did not match: %s\n", subscription)
 		}
 	}
 	if bestMatch == "" {
-		fmt.Printf("No match for %s\n", topic)
+		//fmt.Printf("No match for %s\n", topic)
 		bestMatch = topic
 	}
 	return bestMatch
