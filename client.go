@@ -82,13 +82,14 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 		AuthToken:                tok,
 		Clientid:                 cid,
 		Timeout:                  time.Duration(timeout) * time.Second,
-		internalOutgoingBuf:      make(chan []byte, 30),
-		ClientErrorBuffer:        make(chan error, 10),
-		internalErrorBuffer:      make(chan *errWrap, 2),
-		shutdown_reader:          make(chan struct{}, 1),
-		shutdown_writer:          make(chan struct{}, 1),
-		rando:                    mrand.New(mrand.NewSource(time.Now().UnixNano())),
-		randomut:                 new(sync.RWMutex),
+		//internalOutgoingBuf:      make(chan []byte, 30),
+		internalOutgoingBuf: make(chan []byte),
+		ClientErrorBuffer:   make(chan error, 10),
+		internalErrorBuffer: make(chan *errWrap, 2),
+		shutdown_reader:     make(chan struct{}, 1),
+		shutdown_writer:     make(chan struct{}, 1),
+		rando:               mrand.New(mrand.NewSource(time.Now().UnixNano())),
+		randomut:            new(sync.RWMutex),
 	}
 	return client
 }
@@ -98,12 +99,15 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 //sort of like a fan-in, except this simply allows us to do
 // all of the error handling logic in one place
 func (c *Client) sendMessage(m mqtt.Message) error {
-	select {
-	case c.internalOutgoingBuf <- m.Encode():
-		return nil
-	default:
-		return errors.New(fmt.Sprintf("Sending Channel blocked at %d", len(c.internalOutgoingBuf)))
+	_, err := c.C.Write(m.Encode())
+	if err != nil {
+		c.internalErrorBuffer <- &errWrap{
+			err:      err,
+			reciever: _CON_WRITER,
+		}
+		return err
 	}
+	return nil
 }
 
 //connectionWriter is an internal function. it essentially sits in a goroutine and writes to the connection
