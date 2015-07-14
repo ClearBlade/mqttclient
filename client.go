@@ -159,14 +159,27 @@ func (c *Client) connectionListener() {
 			m <- msg
 		}
 	}(mch, ech)
-	sentPing := false
+
+	heardFromServer := true
+	go func(cli *Client) {
+		for {
+			time.Sleep(cli.Timeout)
+			if heardFromServer {
+				cli.sendMessage(&mqtt.Pingreq{})
+				heardFromServer = false
+			} else if time.Since(cli.last_timeout_reccd) > cli.Timeout && !heardFromServer {
+				//there was a timeout
+				cli.Shutdown(true)
+			}
+		}
+	}(c)
 	for {
 		select {
 
 		case msg := <-mch:
 			//dispatch the internal functions
 			c.dispatch(msg)
-			sentPing = false
+			heardFromServer = true
 		case e := <-ech:
 			//an error was recieved from the listenr
 			if !shutdown {
@@ -175,16 +188,6 @@ func (c *Client) connectionListener() {
 					reciever: _CON_READER,
 				}
 			}
-		case <-time.After(c.Timeout):
-			//keepalive
-			if !sentPing {
-				c.sendMessage(&mqtt.Pingreq{})
-				sentPing = true
-			} else if time.Since(c.last_timeout_reccd) > c.Timeout && sentPing {
-				//there was a timeout
-				c.Shutdown(true)
-			}
-
 		case <-c.shutdown_reader:
 			shutdown = true
 			return
