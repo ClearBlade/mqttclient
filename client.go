@@ -101,6 +101,7 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 func (c *Client) sendMessage(m mqtt.Message) error {
 	_, err := c.C.Write(m.Encode())
 	if err != nil {
+		fmt.Printf("FILLING ERROR BUF WITH %s\n", err)
 		c.internalErrorBuffer <- &errWrap{
 			err:      err,
 			reciever: _CON_WRITER,
@@ -121,6 +122,7 @@ func (c *Client) connectionWriter() {
 		case out := <-c.internalOutgoingBuf:
 			_, err := c.C.Write(out)
 			if err != nil {
+				fmt.Printf("FDLSFLJ: %s\n", err)
 				c.internalErrorBuffer <- &errWrap{
 					err:      err,
 					reciever: _CON_WRITER,
@@ -160,28 +162,16 @@ func (c *Client) connectionListener() {
 		}
 	}(mch, ech)
 
+	lastTimeoutTime := time.Now()
 	heardFromServer := true
-	go func(cli *Client) {
-		for {
-			time.Sleep(cli.Timeout)
-			if heardFromServer {
-				cli.sendMessage(&mqtt.Pingreq{})
-				heardFromServer = false
-			} else if time.Since(cli.last_timeout_reccd) > cli.Timeout && !heardFromServer {
-				//there was a timeout
-				cli.Shutdown(true)
-			}
-		}
-	}(c)
 	for {
+		timeDiff := time.Now().Sub(lastTimeoutTime)
 		select {
-
 		case msg := <-mch:
-			//dispatch the internal functions
-			c.dispatch(msg)
 			heardFromServer = true
+			fmt.Printf("DID HEAR FROM SERVER: %p\n", c)
+			c.dispatch(msg)
 		case e := <-ech:
-			//an error was recieved from the listenr
 			if !shutdown {
 				c.internalErrorBuffer <- &errWrap{
 					err:      e,
@@ -191,6 +181,29 @@ func (c *Client) connectionListener() {
 		case <-c.shutdown_reader:
 			shutdown = true
 			return
+		case <-time.After(c.Timeout - timeDiff):
+			if !heardFromServer {
+				for done := false; !done; {
+					select {
+					case msg := <-mch:
+						fmt.Printf("FOUND SOMETHING DURING TIMEOUT: %p\n", c)
+						heardFromServer = true
+						c.dispatch(msg)
+					default:
+						fmt.Printf("DID NOT FIND SOMETHING DURING TIMEOUT: %p\n", c)
+						done = true
+					}
+				}
+			}
+			if heardFromServer {
+				fmt.Printf("PING!: %p\n", c)
+				c.sendMessage(&mqtt.Pingreq{})
+				heardFromServer = false
+				lastTimeoutTime = time.Now()
+			} else {
+				fmt.Printf("TIMEOUT\n")
+				c.Shutdown(true)
+			}
 		}
 	}
 }
@@ -277,6 +290,7 @@ func (c *Client) dispatch(msg mqtt.Message) {
 	case mqtt.PINGREQ:
 		//shouldn't happen
 	case mqtt.PINGRESP:
+		fmt.Printf("RECEIVE PING RESPONSE: %p\n", c)
 		//pingresp will reset the counter elsewhere
 	case mqtt.DISCONNECT:
 		//shouldn't happen
@@ -301,6 +315,7 @@ func (c *Client) errorTree() {
 	//we also use this mechanism for a regular shutdown of the client's connection, simply crashing them both and releasing the resources
 	e := <-c.internalErrorBuffer
 	if e.reciever != _CON_READER {
+		fmt.Printf("Writing to shutdown reader: %+v\n", e)
 		c.shutdown_reader <- struct{}{}
 	}
 	if e.reciever != _CON_WRITER {
@@ -316,6 +331,7 @@ func (c *Client) errorTree() {
 
 //Shutdown sends a disconnect packet (if asked), and then disconnects from the broker after a set time limit
 func (c *Client) Shutdown(sendDisconnect bool) error {
+	fmt.Printf("WHOA -- Shutdown() called: %p\n", c)
 	var err error
 	if sendDisconnect {
 		e := SendDisconnect(c)
@@ -325,6 +341,7 @@ func (c *Client) Shutdown(sendDisconnect bool) error {
 		}
 		<-time.After(time.Second)
 	}
+	fmt.Printf("In Shutdown filling the internal error bugger\n")
 	c.internalErrorBuffer <- &errWrap{reciever: _REGULAR_SHUTDOWN}
 	return err
 }

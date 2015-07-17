@@ -179,7 +179,7 @@ func SubscribeFlow(c *Client, topic string, qos int) (<-chan *mqtt.Publish, erro
 		Header: &mqtt.StaticHeader{
 			DUP:    false,
 			Retain: false,
-			QOS:    1,
+			QOS:    uint8(qos),
 		},
 		MessageId: randMid(c),
 		Subscriptions: []mqtt.TopicQOSTuple{
