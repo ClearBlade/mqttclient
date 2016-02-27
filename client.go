@@ -33,8 +33,8 @@ type Client struct {
 	//introduce a sync write mode?
 	last_timeout_reccd time.Time
 
-	shutting_down bool
-
+	shutting_down            bool
+	got_connack              chan struct{}
 	msg_store                *storage
 	subscriptions            *outgoing_topics
 	waiting_for_subscription *subscription_store
@@ -90,6 +90,7 @@ func NewClient(tok, sk, ss, cid string, timeout int) *Client {
 		shutdown_reader:     make(chan struct{}, 1),
 		shutdown_writer:     make(chan struct{}, 1),
 		rando:               mrand.New(mrand.NewSource(time.Now().UnixNano())),
+		got_connack:         make(chan struct{}, 1),
 		randomut:            new(sync.RWMutex),
 		resetTimer:          make(chan bool, 1),
 	}
@@ -218,6 +219,14 @@ func (c *Client) dispatch(msg mqtt.Message) {
 	case mqtt.CONNECT:
 		//shouldn't happen?
 	case mqtt.CONNACK:
+		if msg.(*mqtt.Connack).ReturnCode != 0 {
+			c.internalErrorBuffer <- &errWrap{
+				err:      fmt.Errorf("Got return type %d instead of 0\n", msg.(*mqtt.Connack).ReturnCode),
+				reciever: _OTHER,
+			}
+		} else {
+			c.got_connack <- struct{}{}
+		}
 	case mqtt.PUBLISH:
 		pubMsg := msg.(*mqtt.Publish)
 		c.subscriptions.relay_message(pubMsg, pubMsg.Topic.Whole)

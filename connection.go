@@ -61,7 +61,16 @@ func SendConnect(c *Client, lastWill, lastWillRetain bool, lastWillQOS int,
 		WillQOS:        uint8(lastWillQOS),
 		Version:        0x4,
 	}
-	return c.sendMessage(connect)
+	if err := c.sendMessage(connect); err != nil {
+		return err
+	}
+	select {
+	case <-c.got_connack:
+		return nil
+	case <-time.After(time.Second * 30):
+		return fmt.Errorf("Timed out waiting for connack")
+	}
+
 }
 
 //MakeMeABytePublish is a helper function to create a QOS 0, non retained MQTT publish without the problems of worrying about bad unicode
