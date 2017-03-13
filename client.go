@@ -167,10 +167,8 @@ func (c *Client) connectionListener() {
 		}
 	}(mch, ech)
 
-	//lastTimeoutTime := time.Now()
 	heardFromServer := true
 	for {
-		//timeDiff := time.Now().Sub(lastTimeoutTime)
 		select {
 		case <-c.resetTimer:
 		case msg := <-mch:
@@ -186,25 +184,11 @@ func (c *Client) connectionListener() {
 		case <-c.shutdown_reader:
 			shutdown = true
 			return
-		case <-time.After(c.Timeout /*- timeDiff*/):
-			if !heardFromServer {
-				for done := false; !done; {
-					select {
-					case msg := <-mch:
-						heardFromServer = true
-						c.dispatch(msg)
-					default:
-						done = true
-					}
-				}
-			}
-			if heardFromServer {
-				c.sendMessage(&mqtt.Pingreq{})
-				heardFromServer = false
-				//lastTimeoutTime = time.Now()
-			} else {
-				c.Shutdown(true)
-			}
+		case <-time.After(c.Timeout):
+			heardFromServer = false
+		}
+		if !heardFromServer {
+			c.sendMessage(&mqtt.Pingreq{})
 		}
 	}
 }
